@@ -1,4 +1,1 @@
-const (
-	PciDevicesPath = "/sys/bus/pci/devices/"
-	PciDriversPath = "/sys/bus/pci/drivers/"
-)
+

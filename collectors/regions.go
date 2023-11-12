@@ -9,13 +9,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type regionCollector struct {
-	regionMetric *prometheus.Desc
+type RegionCollector struct {
+	RegionMetric *prometheus.Desc
 }
 
-func newRegionCollector() *regionCollector {
-	return &regionCollector{
-		regionMetric: prometheus.NewDesc(
+func NewRegionCollector() *RegionCollector {
+	return &RegionCollector{
+		RegionMetric: prometheus.NewDesc(
 			"pci_device_region_size_bytes",
 			"The size of each memory region of the pci device",
 			[]string{"device", "region"},
@@ -24,11 +24,11 @@ func newRegionCollector() *regionCollector {
 	}
 }
 
-func (collector *regionCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- collector.regionMetric
+func (collector *RegionCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- collector.RegionMetric
 }
 
-func (collector *regionCollector) collect(ch chan<- prometheus.Metric, slot string) {
+func (collector *RegionCollector) Collect(ch chan<- prometheus.Metric, slot string) {
 	slotPath := filepath.Join(PciDevicesPath, slot)
 
 	fileList, err := os.ReadDir(slotPath)
@@ -43,7 +43,7 @@ func (collector *regionCollector) collect(ch chan<- prometheus.Metric, slot stri
 				fmt.Printf("Could not collect size for region %s in slot %s", file.Name(), slot)
 				return
 			}
-			ch <- prometheus.MustNewConstMetric(collector.regionMetric, prometheus.GaugeValue, float64(fileInfo.Size()), slot, file.Name())
+			ch <- prometheus.MustNewConstMetric(collector.RegionMetric, prometheus.GaugeValue, float64(fileInfo.Size()), slot, file.Name())
 		}
 	}
 }

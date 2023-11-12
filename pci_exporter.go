@@ -9,10 +9,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"./collectors"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/talfridmen/pci_exporter/collectors"
+)
+
+const (
+	PciDevicesPath = "/sys/bus/pci/devices/"
+	PciDriversPath = "/sys/bus/pci/drivers/"
 )
 
 // Define a struct for you collector that contains pointers
@@ -22,7 +26,7 @@ import (
 type PciCollector struct {
 	PciDeviceMetric *prometheus.Desc
 	driverNames     []string
-	regionCollector regionCollector
+	regionCollector *collectors.RegionCollector
 }
 
 type DeviceInfo struct {
@@ -50,7 +54,8 @@ func newPciCollector() *PciCollector {
 			"Describes information about PCI devices",
 			[]string{"driver", "device", "slot", "revision", "link_speed", "link_width", "regions"}, nil,
 		),
-		driverNames: driverNames,
+		driverNames:     driverNames,
+		regionCollector: collectors.NewRegionCollector(),
 	}
 }
 
@@ -58,6 +63,7 @@ func newPciCollector() *PciCollector {
 // It essentially writes all descriptors to the prometheus desc channel.
 func (collector *PciCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.PciDeviceMetric
+	go collector.regionCollector.Describe(ch)
 }
 
 func contains(slice []string, str string) bool {
@@ -69,10 +75,19 @@ func contains(slice []string, str string) bool {
 	return false
 }
 
+func filter(arr []string, cond func(string) bool) []string {
+	result := []string{}
+	for i := range arr {
+		if cond(arr[i]) {
+			result = append(result, arr[i])
+		}
+	}
+	return result
+}
+
 // Collect implements required collect function for all promehteus collectors
 func (collector *PciCollector) Collect(ch chan<- prometheus.Metric) {
-	pciDriverPath := "/sys/bus/pci/drivers"
-	drivers, err := os.ReadDir(pciDriverPath)
+	drivers, err := os.ReadDir(PciDriversPath)
 	if err != nil {
 		fmt.Println("Error reading PCI drivers directory:", err)
 		return
@@ -83,54 +98,25 @@ func (collector *PciCollector) Collect(ch chan<- prometheus.Metric) {
 			continue
 		}
 
-		driverInfo, err := collectDriverInfo(pciDriverPath, driver.Name())
+		driverPath := filepath.Join(PciDriversPath, driver.Name())
+
+		driverDirElements, err := os.ReadDir(driverPath)
 		if err != nil {
-			fmt.Println("Error collecting driver information:", err)
-			continue
+			fmt.Printf("Could not ls driver directory for driver %s", driver.Name())
+			return
 		}
-		for _, deviceInfo := range driverInfo.devices {
-			m1 := prometheus.MustNewConstMetric(collector.PciDeviceMetric, prometheus.GaugeValue, 1.0, driverInfo.name, deviceInfo.device, deviceInfo.slot, deviceInfo.revision, deviceInfo.link_speed, deviceInfo.link_width)
-			//			m1 = prometheus.NewMetricWithTimestamp(time.Now(), m1)
-			ch <- m1
-		}
-	}
-}
 
-func collectDriverInfo(pciDriverPath string, driverName string) (*DriverInfo, error) {
-	driverPath := filepath.Join(pciDriverPath, driverName)
-
-	slotsInfo, err := collectSlotsInfo(driverPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &DriverInfo{
-		name:    driverName,
-		devices: slotsInfo,
-	}, nil
-}
-
-func collectSlotsInfo(driverPath string) ([]*DeviceInfo, error) {
-	driverDir, err := os.ReadDir(driverPath)
-	if err != nil {
-		fmt.Printf("Error reading PCI driver directory for driver %s", driverPath)
-		return nil, err
-	}
-
-	slots := []*DeviceInfo{}
-
-	for _, slot := range driverDir {
-		if strings.HasPrefix(slot.Name(), "0000") {
-			deviceInfo, err := collectSlotInfo(driverPath, slot.Name())
-			if err != nil {
-				fmt.Printf("Error collecting slot info for slot %s", slot.Name())
-				return nil, err
+		slots := []string{}
+		for _, element := range driverDirElements {
+			if strings.HasPrefix(element.Name(), "0000") {
+				slots = append(slots, element.Name())
 			}
-			slots = append(slots, deviceInfo)
+		}
+
+		for _, slot := range slots {
+			collector.regionCollector.Collect(ch, slot)
 		}
 	}
-
-	return slots, nil
 }
 
 func collectSlotInfo(driverPath string, slot string) (*DeviceInfo, error) {

@@ -1,6 +1,6 @@
-module kazoo/pci_device_exporter
+module github.com/talfridmen/pci_exporter
 
-go 1.19
+go 1.21.4
 
 require github.com/prometheus/client_golang v1.17.0
 
