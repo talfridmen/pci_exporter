@@ -63,7 +63,7 @@ func newPciCollector() *PciCollector {
 // It essentially writes all descriptors to the prometheus desc channel.
 func (collector *PciCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.PciDeviceMetric
-	go collector.regionCollector.Describe(ch)
+	collector.regionCollector.Describe(ch)
 }
 
 func contains(slice []string, str string) bool {
