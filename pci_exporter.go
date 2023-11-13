@@ -42,30 +42,6 @@ type DriverInfo struct {
 	name    string
 }
 
-// You must create a constructor for you collector that
-// initializes every descriptor and returns a pointer to the collector
-func newPciCollector() *PciCollector {
-	driverFilter := flag.String("driver", "", "Specify the driver(s) to query (comma-separated)")
-	flag.Parse()
-	driverNames := strings.Split(*driverFilter, ",")
-
-	return &PciCollector{
-		PciDeviceMetric: prometheus.NewDesc("pci_device",
-			"Describes information about PCI devices",
-			[]string{"driver", "device", "slot", "revision", "link_speed", "link_width", "regions"}, nil,
-		),
-		driverNames:     driverNames,
-		regionCollector: collectors.NewRegionCollector(),
-	}
-}
-
-// Each and every collector must implement the Describe function.
-// It essentially writes all descriptors to the prometheus desc channel.
-func (collector *PciCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- collector.PciDeviceMetric
-	collector.regionCollector.Describe(ch)
-}
-
 func contains(slice []string, str string) bool {
 	for _, s := range slice {
 		if s == str {
@@ -83,6 +59,36 @@ func filter(arr []string, cond func(string) bool) []string {
 		}
 	}
 	return result
+}
+
+// You must create a constructor for you collector that
+// initializes every descriptor and returns a pointer to the collector
+func newPciCollector() *PciCollector {
+	driverFilter := flag.String("driver", "", "Specify the driver(s) to query (comma-separated)")
+	flag.Parse()
+	driverNames := strings.Split(*driverFilter, ",")
+	driverNames = filter(
+		driverNames,
+		func(st string) bool {
+			return st == ""
+		},
+	)
+
+	return &PciCollector{
+		PciDeviceMetric: prometheus.NewDesc("pci_device",
+			"Describes information about PCI devices",
+			[]string{"driver", "device", "slot", "revision", "link_speed", "link_width", "regions"}, nil,
+		),
+		driverNames:     driverNames,
+		regionCollector: collectors.NewRegionCollector(),
+	}
+}
+
+// Each and every collector must implement the Describe function.
+// It essentially writes all descriptors to the prometheus desc channel.
+func (collector *PciCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- collector.PciDeviceMetric
+	collector.regionCollector.Describe(ch)
 }
 
 // Collect implements required collect function for all promehteus collectors
