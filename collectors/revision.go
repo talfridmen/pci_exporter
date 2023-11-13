@@ -16,8 +16,8 @@ type RevisionCollector struct {
 func NewRevisionCollector() *RevisionCollector {
 	return &RevisionCollector{
 		RegionMetric: prometheus.NewDesc(
-			"pci_device_region_size_bytes",
-			"The size of each memory region of the pci device",
+			"pci_device_revision",
+			"The revisions of the pci device",
 			[]string{"device", "revision"},
 			nil,
 		),
