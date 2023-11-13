@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -24,9 +25,10 @@ const (
 // Note you can also include fields of other types if they provide utility
 // but we just won't be exposing them as metrics.
 type PciCollector struct {
-	PciDeviceMetric *prometheus.Desc
-	driverNames     []string
-	regionCollector *collectors.RegionCollector
+	PciDeviceMetric   *prometheus.Desc
+	driverNames       []string
+	regionCollector   *collectors.RegionCollector
+	revisionCollector *collectors.RevisionCollector
 }
 
 type DeviceInfo struct {
@@ -79,8 +81,9 @@ func newPciCollector() *PciCollector {
 			"Describes information about PCI devices",
 			[]string{"driver", "device", "slot", "revision", "link_speed", "link_width", "regions"}, nil,
 		),
-		driverNames:     driverNames,
-		regionCollector: collectors.NewRegionCollector(),
+		driverNames:       driverNames,
+		regionCollector:   collectors.NewRegionCollector(),
+		revisionCollector: collectors.NewRevisionCollector(),
 	}
 }
 
@@ -89,6 +92,7 @@ func newPciCollector() *PciCollector {
 func (collector *PciCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.PciDeviceMetric
 	collector.regionCollector.Describe(ch)
+	collector.revisionCollector.Describe(ch)
 }
 
 // Collect implements required collect function for all promehteus collectors
@@ -131,9 +135,13 @@ func (collector *PciCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 	}
 
+	var wg sync.WaitGroup
 	for _, slot := range slots {
-		collector.regionCollector.Collect(ch, slot)
+		wg.Add(2)
+		go collector.regionCollector.Collect(&wg, ch, slot)
+		go collector.revisionCollector.Collect(&wg, ch, slot)
 	}
+	wg.Wait()
 }
 
 func collectSlotInfo(driverPath string, slot string) (*DeviceInfo, error) {
