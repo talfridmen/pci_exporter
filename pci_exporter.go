@@ -93,35 +93,46 @@ func (collector *PciCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements required collect function for all promehteus collectors
 func (collector *PciCollector) Collect(ch chan<- prometheus.Metric) {
-	drivers, err := os.ReadDir(PciDriversPath)
-	if err != nil {
-		fmt.Println("Error reading PCI drivers directory:", err)
-		return
-	}
-	for _, driver := range drivers {
-		// Check if the driver name is in the filter list (if specified)
-		if len(collector.driverNames) > 0 && !contains(collector.driverNames, driver.Name()) {
-			continue
-		}
-
-		driverPath := filepath.Join(PciDriversPath, driver.Name())
-
-		driverDirElements, err := os.ReadDir(driverPath)
+	slots := []string{}
+	if len(collector.driverNames) > 0 {
+		drivers, err := os.ReadDir(PciDriversPath)
 		if err != nil {
-			fmt.Printf("Could not ls driver directory for driver %s", driver.Name())
+			fmt.Println("Error reading PCI drivers directory:", err)
 			return
 		}
+		for _, driver := range drivers {
+			// Check if the driver name is in the filter list (if specified)
+			if len(collector.driverNames) > 0 && !contains(collector.driverNames, driver.Name()) {
+				continue
+			}
 
-		slots := []string{}
-		for _, element := range driverDirElements {
-			if strings.HasPrefix(element.Name(), "0000") {
-				slots = append(slots, element.Name())
+			driverPath := filepath.Join(PciDriversPath, driver.Name())
+
+			driverDirElements, err := os.ReadDir(driverPath)
+			if err != nil {
+				fmt.Printf("Could not ls driver directory for driver %s", driver.Name())
+				return
+			}
+
+			for _, element := range driverDirElements {
+				if strings.HasPrefix(element.Name(), "0000") {
+					slots = append(slots, element.Name())
+				}
 			}
 		}
-
-		for _, slot := range slots {
-			collector.regionCollector.Collect(ch, slot)
+	} else {
+		devices, err := os.ReadDir(PciDevicesPath)
+		if err != nil {
+			fmt.Println("Error reading PCI drivers directory:", err)
+			return
 		}
+		for _, device := range devices {
+			slots = append(slots, device.Name())
+		}
+	}
+
+	for _, slot := range slots {
+		collector.regionCollector.Collect(ch, slot)
 	}
 }
 
