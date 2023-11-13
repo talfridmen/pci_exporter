@@ -70,7 +70,7 @@ func newPciCollector() *PciCollector {
 	driverNames = filter(
 		driverNames,
 		func(st string) bool {
-			return st == ""
+			return st != ""
 		},
 	)
 
