@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -30,26 +29,22 @@ func (collector *LinkSpeedCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.LinkSpeedMetric
 }
 
-func (collector *LinkSpeedCollector) Collect(wg *sync.WaitGroup, ch chan<- prometheus.Metric, slot string) {
+func (collector *LinkSpeedCollector) Collect(ch chan<- prometheus.Metric, slot string) {
 	linkSpeedFilePath := filepath.Join(PciDevicesPath, slot, "current_link_speed")
 	if !fileExists(linkSpeedFilePath) {
-		wg.Done()
 		return
 	}
 	data, err := os.ReadFile(linkSpeedFilePath)
 	if err != nil {
 		fmt.Printf("could not get link speed for slot %s\n", slot)
-		wg.Done()
 		return
 	}
 	value, err := getFloatFromLinkSpeed(string(data))
 	if err != nil {
 		fmt.Printf("Could not parse link speed from slot %s\n", slot)
-		wg.Done()
 		return
 	}
 	ch <- prometheus.MustNewConstMetric(collector.LinkSpeedMetric, prometheus.GaugeValue, value, slot)
-	wg.Done()
 }
 
 func getFloatFromLinkSpeed(st string) (float64, error) {

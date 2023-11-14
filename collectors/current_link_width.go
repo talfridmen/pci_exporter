@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -30,26 +29,22 @@ func (collector *LinkWidthCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.LinkWidthMetric
 }
 
-func (collector *LinkWidthCollector) Collect(wg *sync.WaitGroup, ch chan<- prometheus.Metric, slot string) {
+func (collector *LinkWidthCollector) Collect(ch chan<- prometheus.Metric, slot string) {
 	linkWidthFilePath := filepath.Join(PciDevicesPath, slot, "current_link_width")
 	if !fileExists(linkWidthFilePath) {
-		wg.Done()
 		return
 	}
 	data, err := os.ReadFile(linkWidthFilePath)
 	if err != nil {
 		fmt.Printf("could not get link width for slot %s\n", slot)
-		wg.Done()
 		return
 	}
 	value, err := getFloatFromLinkWidth(strings.TrimSpace(string(data)))
 	if err != nil {
 		fmt.Printf("Could not parse link width from slot %s\n", slot)
-		wg.Done()
 		return
 	}
 	ch <- prometheus.MustNewConstMetric(collector.LinkWidthMetric, prometheus.GaugeValue, value, slot)
-	wg.Done()
 }
 
 func getFloatFromLinkWidth(st string) (float64, error) {

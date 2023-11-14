@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -130,15 +129,12 @@ func (collector *PciCollector) Describe(ch chan<- *prometheus.Desc) {
 func (collector *PciCollector) Collect(ch chan<- prometheus.Metric) {
 	slots := getSlots(collector.driverNames)
 
-	var wg sync.WaitGroup
 	for _, slot := range slots {
-		wg.Add(4)
-		go collector.regionCollector.Collect(&wg, ch, slot)
-		go collector.revisionCollector.Collect(&wg, ch, slot)
-		go collector.linkSpeedCollector.Collect(&wg, ch, slot)
-		go collector.linkWidthCollector.Collect(&wg, ch, slot)
+		collector.regionCollector.Collect(ch, slot)
+		collector.revisionCollector.Collect(ch, slot)
+		collector.linkSpeedCollector.Collect(ch, slot)
+		collector.linkWidthCollector.Collect(ch, slot)
 	}
-	wg.Wait()
 }
 
 // device, err := os.ReadFile(filepath.Join(slotPath, "device"))

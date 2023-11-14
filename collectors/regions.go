@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -29,13 +28,12 @@ func (collector *RegionCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.RegionMetric
 }
 
-func (collector *RegionCollector) Collect(wg *sync.WaitGroup, ch chan<- prometheus.Metric, slot string) {
+func (collector *RegionCollector) Collect(ch chan<- prometheus.Metric, slot string) {
 	slotPath := filepath.Join(PciDevicesPath, slot)
 
 	fileList, err := os.ReadDir(slotPath)
 	if err != nil {
 		fmt.Printf("Error reading pci slot directory for slot %s\n", slot)
-		wg.Done()
 		return
 	}
 	for _, file := range fileList {
@@ -43,11 +41,9 @@ func (collector *RegionCollector) Collect(wg *sync.WaitGroup, ch chan<- promethe
 			fileInfo, err := file.Info()
 			if err != nil {
 				fmt.Printf("Could not collect size for region %s in slot %s\n", file.Name(), slot)
-				wg.Done()
 				return
 			}
 			ch <- prometheus.MustNewConstMetric(collector.RegionMetric, prometheus.GaugeValue, float64(fileInfo.Size()), slot, file.Name())
 		}
 	}
-	wg.Done()
 }

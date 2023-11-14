@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -28,18 +27,15 @@ func (collector *RevisionCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.RevisionMetric
 }
 
-func (collector *RevisionCollector) Collect(wg *sync.WaitGroup, ch chan<- prometheus.Metric, slot string) {
+func (collector *RevisionCollector) Collect(ch chan<- prometheus.Metric, slot string) {
 	revisionFilePath := filepath.Join(PciDevicesPath, slot, "revision")
 	if !fileExists(revisionFilePath) {
-		wg.Done()
 		return
 	}
 	data, err := os.ReadFile(revisionFilePath)
 	if err != nil {
 		fmt.Printf("could not get revisions for slot %s\n", slot)
-		wg.Done()
 		return
 	}
 	ch <- prometheus.MustNewConstMetric(collector.RevisionMetric, prometheus.GaugeValue, 1, slot, string(data[2:4]))
-	wg.Done()
 }
