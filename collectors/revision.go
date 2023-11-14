@@ -40,6 +40,6 @@ func (collector *RevisionCollector) Collect(wg *sync.WaitGroup, ch chan<- promet
 		wg.Done()
 		return
 	}
-	ch <- prometheus.MustNewConstMetric(collector.RevisionMetric, prometheus.GaugeValue, 1, slot, string(data))
+	ch <- prometheus.MustNewConstMetric(collector.RevisionMetric, prometheus.GaugeValue, 1, slot, string(data[2:4]))
 	wg.Done()
 }
