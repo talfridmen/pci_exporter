@@ -35,6 +35,7 @@ func (collector *RegionCollector) Collect(wg *sync.WaitGroup, ch chan<- promethe
 	fileList, err := os.ReadDir(slotPath)
 	if err != nil {
 		fmt.Printf("Error reading pci slot directory for slot %s\n", slot)
+		wg.Done()
 		return
 	}
 	for _, file := range fileList {
@@ -42,6 +43,7 @@ func (collector *RegionCollector) Collect(wg *sync.WaitGroup, ch chan<- promethe
 			fileInfo, err := file.Info()
 			if err != nil {
 				fmt.Printf("Could not collect size for region %s in slot %s\n", file.Name(), slot)
+				wg.Done()
 				return
 			}
 			ch <- prometheus.MustNewConstMetric(collector.RegionMetric, prometheus.GaugeValue, float64(fileInfo.Size()), slot, file.Name())

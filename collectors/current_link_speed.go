@@ -12,12 +12,12 @@ import (
 )
 
 type LinkSpeedCollector struct {
-	RegionMetric *prometheus.Desc
+	LinkSpeedMetric *prometheus.Desc
 }
 
 func NewLinkSpeedCollector() *LinkSpeedCollector {
 	return &LinkSpeedCollector{
-		RegionMetric: prometheus.NewDesc(
+		LinkSpeedMetric: prometheus.NewDesc(
 			"pci_device_link_speed_GTs",
 			"The link speed of the pci device",
 			[]string{"device"},
@@ -27,25 +27,28 @@ func NewLinkSpeedCollector() *LinkSpeedCollector {
 }
 
 func (collector *LinkSpeedCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- collector.RegionMetric
+	ch <- collector.LinkSpeedMetric
 }
 
 func (collector *LinkSpeedCollector) Collect(wg *sync.WaitGroup, ch chan<- prometheus.Metric, slot string) {
 	linkSpeedFilePath := filepath.Join(PciDevicesPath, slot, "current_link_speed")
 	if !fileExists(linkSpeedFilePath) {
+		wg.Done()
 		return
 	}
 	data, err := os.ReadFile(linkSpeedFilePath)
 	if err != nil {
 		fmt.Printf("could not get link speed for slot %s\n", slot)
+		wg.Done()
 		return
 	}
 	value, err := getFloatFromLinkSpeed(string(data))
 	if err != nil {
 		fmt.Printf("Could not parse link speed from slot %s\n", slot)
+		wg.Done()
 		return
 	}
-	ch <- prometheus.MustNewConstMetric(collector.RegionMetric, prometheus.GaugeValue, value, slot)
+	ch <- prometheus.MustNewConstMetric(collector.LinkSpeedMetric, prometheus.GaugeValue, value, slot)
 	wg.Done()
 }
 

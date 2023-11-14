@@ -12,12 +12,12 @@ import (
 )
 
 type LinkWidthCollector struct {
-	RegionMetric *prometheus.Desc
+	LinkWidthMetric *prometheus.Desc
 }
 
 func NewLinkWidthCollector() *LinkWidthCollector {
 	return &LinkWidthCollector{
-		RegionMetric: prometheus.NewDesc(
+		LinkWidthMetric: prometheus.NewDesc(
 			"pci_device_link_width",
 			"The link width of the pci device",
 			[]string{"device"},
@@ -27,25 +27,28 @@ func NewLinkWidthCollector() *LinkWidthCollector {
 }
 
 func (collector *LinkWidthCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- collector.RegionMetric
+	ch <- collector.LinkWidthMetric
 }
 
 func (collector *LinkWidthCollector) Collect(wg *sync.WaitGroup, ch chan<- prometheus.Metric, slot string) {
 	linkWidthFilePath := filepath.Join(PciDevicesPath, slot, "current_link_width")
 	if !fileExists(linkWidthFilePath) {
+		wg.Done()
 		return
 	}
 	data, err := os.ReadFile(linkWidthFilePath)
 	if err != nil {
 		fmt.Printf("could not get link width for slot %s\n", slot)
+		wg.Done()
 		return
 	}
 	value, err := getFloatFromLinkWidth(strings.TrimSpace(string(data)))
 	if err != nil {
 		fmt.Printf("Could not parse link width from slot %s\n", slot)
+		wg.Done()
 		return
 	}
-	ch <- prometheus.MustNewConstMetric(collector.RegionMetric, prometheus.GaugeValue, value, slot)
+	ch <- prometheus.MustNewConstMetric(collector.LinkWidthMetric, prometheus.GaugeValue, value, slot)
 	wg.Done()
 }
 

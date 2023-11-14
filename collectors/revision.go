@@ -10,12 +10,12 @@ import (
 )
 
 type RevisionCollector struct {
-	RegionMetric *prometheus.Desc
+	RevisionMetric *prometheus.Desc
 }
 
 func NewRevisionCollector() *RevisionCollector {
 	return &RevisionCollector{
-		RegionMetric: prometheus.NewDesc(
+		RevisionMetric: prometheus.NewDesc(
 			"pci_device_revision",
 			"The revisions of the pci device",
 			[]string{"device", "revision"},
@@ -25,19 +25,21 @@ func NewRevisionCollector() *RevisionCollector {
 }
 
 func (collector *RevisionCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- collector.RegionMetric
+	ch <- collector.RevisionMetric
 }
 
 func (collector *RevisionCollector) Collect(wg *sync.WaitGroup, ch chan<- prometheus.Metric, slot string) {
 	revisionFilePath := filepath.Join(PciDevicesPath, slot, "revision")
 	if !fileExists(revisionFilePath) {
+		wg.Done()
 		return
 	}
 	data, err := os.ReadFile(revisionFilePath)
 	if err != nil {
 		fmt.Printf("could not get revisions for slot %s\n", slot)
+		wg.Done()
 		return
 	}
-	ch <- prometheus.MustNewConstMetric(collector.RegionMetric, prometheus.GaugeValue, 1, slot, string(data))
+	ch <- prometheus.MustNewConstMetric(collector.RevisionMetric, prometheus.GaugeValue, 1, slot, string(data))
 	wg.Done()
 }
