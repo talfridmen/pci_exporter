@@ -33,12 +33,12 @@ func (collector *LinkWidthCollector) Collect(wg *sync.WaitGroup, ch chan<- prome
 	linkWidthFilePath := filepath.Join(PciDevicesPath, slot, "current_link_width")
 	data, err := os.ReadFile(linkWidthFilePath)
 	if err != nil {
-		fmt.Printf("could not get link width for slot %s", slot)
+		fmt.Printf("could not get link width for slot %s\n", slot)
 		return
 	}
 	value, err := getFloatFromLinkWidth(string(data))
 	if err != nil {
-		fmt.Printf("Could not parse link width from slot %s", slot)
+		fmt.Printf("Could not parse link width from slot %s\n", slot)
 		return
 	}
 	ch <- prometheus.MustNewConstMetric(collector.RegionMetric, prometheus.GaugeValue, value, slot)
@@ -48,7 +48,7 @@ func (collector *LinkWidthCollector) Collect(wg *sync.WaitGroup, ch chan<- prome
 func getFloatFromLinkWidth(st string) (float64, error) {
 	floatValue, err := strconv.ParseFloat(st, 64)
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse float value: %v", err)
+		return 0, fmt.Errorf("failed to parse float value: %v\n", err)
 	}
 
 	return floatValue, nil

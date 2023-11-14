@@ -32,7 +32,7 @@ func (collector *RevisionCollector) Collect(wg *sync.WaitGroup, ch chan<- promet
 	revisionFilePath := filepath.Join(PciDevicesPath, slot, "revision")
 	data, err := os.ReadFile(revisionFilePath)
 	if err != nil {
-		fmt.Printf("could not get revisions for slot %s", slot)
+		fmt.Printf("could not get revisions for slot %s\n", slot)
 		return
 	}
 	ch <- prometheus.MustNewConstMetric(collector.RegionMetric, prometheus.GaugeValue, 1, slot, string(data))

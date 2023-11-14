@@ -34,12 +34,12 @@ func (collector *LinkSpeedCollector) Collect(wg *sync.WaitGroup, ch chan<- prome
 	linkSpeedFilePath := filepath.Join(PciDevicesPath, slot, "current_link_speed")
 	data, err := os.ReadFile(linkSpeedFilePath)
 	if err != nil {
-		fmt.Printf("could not get link speed for slot %s", slot)
+		fmt.Printf("could not get link speed for slot %s\n", slot)
 		return
 	}
 	value, err := getFloatFromLinkSpeed(string(data))
 	if err != nil {
-		fmt.Printf("Could not parse link speed from slot %s", slot)
+		fmt.Printf("Could not parse link speed from slot %s\n", slot)
 		return
 	}
 	ch <- prometheus.MustNewConstMetric(collector.RegionMetric, prometheus.GaugeValue, value, slot)
@@ -53,13 +53,13 @@ func getFloatFromLinkSpeed(st string) (float64, error) {
 
 	// Check if a match is found
 	if len(matches) < 2 {
-		return 0, fmt.Errorf("no float value found in the input string")
+		return 0, fmt.Errorf("no float value found in the input string\n")
 	}
 
 	// Extract and parse the float value
 	floatValue, err := strconv.ParseFloat(matches[1], 64)
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse float value: %v", err)
+		return 0, fmt.Errorf("failed to parse float value: %v\n", err)
 	}
 
 	return floatValue, nil

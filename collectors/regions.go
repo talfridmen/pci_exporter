@@ -34,14 +34,14 @@ func (collector *RegionCollector) Collect(wg *sync.WaitGroup, ch chan<- promethe
 
 	fileList, err := os.ReadDir(slotPath)
 	if err != nil {
-		fmt.Printf("Error reading pci slot directory for slot %s", slot)
+		fmt.Printf("Error reading pci slot directory for slot %s\n", slot)
 		return
 	}
 	for _, file := range fileList {
 		if strings.HasPrefix(file.Name(), "resource") && file.Name() != "resource" {
 			fileInfo, err := file.Info()
 			if err != nil {
-				fmt.Printf("Could not collect size for region %s in slot %s", file.Name(), slot)
+				fmt.Printf("Could not collect size for region %s in slot %s\n", file.Name(), slot)
 				return
 			}
 			ch <- prometheus.MustNewConstMetric(collector.RegionMetric, prometheus.GaugeValue, float64(fileInfo.Size()), slot, file.Name())

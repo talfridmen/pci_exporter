@@ -56,7 +56,7 @@ func getSlots(driverNames []string) []string {
 	if len(driverNames) > 0 {
 		drivers, err := os.ReadDir(PciDriversPath)
 		if err != nil {
-			fmt.Printf("Error reading PCI drivers directory: %v", err)
+			fmt.Printf("Error reading PCI drivers directory: %v\n", err)
 			return nil
 		}
 		for _, driver := range drivers {
@@ -69,7 +69,7 @@ func getSlots(driverNames []string) []string {
 
 			driverDirElements, err := os.ReadDir(driverPath)
 			if err != nil {
-				fmt.Printf("Could not ls driver directory for driver %s", driver.Name())
+				fmt.Printf("Could not ls driver directory for driver %s\n", driver.Name())
 				return nil
 			}
 
@@ -82,7 +82,7 @@ func getSlots(driverNames []string) []string {
 	} else {
 		devices, err := os.ReadDir(PciDevicesPath)
 		if err != nil {
-			fmt.Printf("Error reading PCI drivers directory: %v", err)
+			fmt.Printf("Error reading PCI drivers directory: %v\n", err)
 			return nil
 		}
 		for _, device := range devices {
