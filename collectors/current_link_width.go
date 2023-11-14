@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -39,7 +40,7 @@ func (collector *LinkWidthCollector) Collect(wg *sync.WaitGroup, ch chan<- prome
 		fmt.Printf("could not get link width for slot %s\n", slot)
 		return
 	}
-	value, err := getFloatFromLinkWidth(string(data))
+	value, err := getFloatFromLinkWidth(strings.TrimSpace(string(data)))
 	if err != nil {
 		fmt.Printf("Could not parse link width from slot %s\n", slot)
 		return
