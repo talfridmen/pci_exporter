@@ -32,6 +32,9 @@ func (collector *LinkSpeedCollector) Describe(ch chan<- *prometheus.Desc) {
 
 func (collector *LinkSpeedCollector) Collect(wg *sync.WaitGroup, ch chan<- prometheus.Metric, slot string) {
 	linkSpeedFilePath := filepath.Join(PciDevicesPath, slot, "current_link_speed")
+	if !fileExists(linkSpeedFilePath) {
+		return
+	}
 	data, err := os.ReadFile(linkSpeedFilePath)
 	if err != nil {
 		fmt.Printf("could not get link speed for slot %s\n", slot)

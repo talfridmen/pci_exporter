@@ -31,6 +31,9 @@ func (collector *LinkWidthCollector) Describe(ch chan<- *prometheus.Desc) {
 
 func (collector *LinkWidthCollector) Collect(wg *sync.WaitGroup, ch chan<- prometheus.Metric, slot string) {
 	linkWidthFilePath := filepath.Join(PciDevicesPath, slot, "current_link_width")
+	if !fileExists(linkWidthFilePath) {
+		return
+	}
 	data, err := os.ReadFile(linkWidthFilePath)
 	if err != nil {
 		fmt.Printf("could not get link width for slot %s\n", slot)

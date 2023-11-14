@@ -30,6 +30,9 @@ func (collector *RevisionCollector) Describe(ch chan<- *prometheus.Desc) {
 
 func (collector *RevisionCollector) Collect(wg *sync.WaitGroup, ch chan<- prometheus.Metric, slot string) {
 	revisionFilePath := filepath.Join(PciDevicesPath, slot, "revision")
+	if !fileExists(revisionFilePath) {
+		return
+	}
 	data, err := os.ReadFile(revisionFilePath)
 	if err != nil {
 		fmt.Printf("could not get revisions for slot %s\n", slot)
