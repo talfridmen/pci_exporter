@@ -153,5 +153,6 @@ func main() {
 	prometheus.MustRegister(collector)
 
 	http.Handle("/metrics", promhttp.Handler())
+	fmt.Printf("Listening on port %d\n", 9101)
 	log.Fatal(http.ListenAndServe("0.0.0.0:9101", nil))
 }
